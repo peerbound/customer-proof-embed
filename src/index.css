@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--pb-card-background-color);
+  --color-primary: var(--pb-text-primary-color);
+  --color-secondary: var(--pb-text-secondary-color);
+  --color-stars: var(--pb-review-star-color);
+  --color-border: var(--pb-card-border-color);
+
+  --spacing-grid: var(--pb-card-grid-gap);
+  --spacing-card-padding: var(--pb-card-padding);
+  --spacing-star: var(--pb-review-star-size);
+
+  --radius-card: var(--pb-card-radius);
+}
+
+/*
+ * :host styles - CSS variables that pierce the shadow boundary
+ * Users can override these on the pb-embed element
+ */
+:host {
+  --pb-card-background-color: oklch(1 0 0);
+  --pb-text-primary-color: oklch(0.21 0.006 285.885);
+  --pb-text-secondary-color: oklch(0.552 0.016 285.938);
+  --pb-review-star-color: var(--color-primary);
+  --pb-review-star-size: 1.375rem;
+  --pb-card-border-color: oklch(0.92 0.004 286.32);
+  --pb-card-grid-gap: 2rem;
+  --pb-card-padding: 1.25rem;
+  --pb-card-radius: 0.75rem;
+
+  /*
+   * Tailwind v4 Shadow DOM workaround
+   *
+   * Tailwind v4 uses @property declarations to set initial values for CSS
+   * variables like --tw-shadow, --tw-border-style, etc. However, @property
+   * only works at the document level and does NOT apply inside Shadow DOM.
+   *
+   * Without these fallbacks, utilities like shadow-*, border-*, etc. break
+   * because the variables are undefined.
+   *
+   * https://github.com/tailwindlabs/tailwindcss/discussions/16772
+   */
+  --tw-border-style: solid;
+  --tw-shadow: 0 0 #0000;
+  --tw-inset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-inset-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-offset-shadow: 0 0 #0000;
+
+  @apply text-primary text-base;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  button {
+    @apply cursor-pointer;
+  }
+}
