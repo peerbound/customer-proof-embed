@@ -1,0 +1,58 @@
+name: Build and Deploy - AWS prod
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    concurrency:
+      group: pb-embed-production
+      cancel-in-progress: true
+    env:
+      PB_API_BASE_URL: ${{ vars.PB_API_BASE_URL }}
+      DISTRIBUTION_ID: ${{ vars.DISTRIBUTION_ID }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      AWS_ROLE: ${{ vars.AWS_ROLE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
+      - name: Lint & Format
+        run: |
+          pnpm prettier:check
+          pnpm lint
+      - name: Test
+        run: pnpm test:run
+      - name: Build
+        run: pnpm build
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          role-session-name: GitHubActionsSession
+          aws-region: us-east-1
+      - name: Upload to S3
+        run: |
+          aws s3 sync ./dist s3://${{ env.S3_BUCKET }} --delete
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ env.DISTRIBUTION_ID }} --paths "/*"
