@@ -32,7 +32,7 @@ export const fetchEvents = async (options: EmbedOptions, cursor?: string) => {
   const { id, token, count, filters } = options;
 
   // Use preview endpoint if token is provided, otherwise use regular endpoint
-  const url = token ? `/api/embed/preview/${id}` : `/api/embed/${id}`;
+  const url = token ? `/api/embed/v1/preview/${id}` : `/api/embed/v1/${id}`;
 
   const { data } = await api.get(url, {
     params: {
