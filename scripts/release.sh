@@ -190,7 +190,23 @@ else
 fi
 
 echo "Opening pull request..."
+
+# We do not need to track PR success here because we delete the branch on pipeline failure
 pr_url=$(gh pr create --base main --head "$branch_name" --title "Bump version to $tag_name" --body "$notes")
+
+echo "Uploading latest widget file to S3..."
+
+s3_latest_paths=(
+  "s3://${S3_BUCKET}/scripts/widget@latest.js"
+  "s3://${S3_BUCKET}/v1/widget.js"  # Deprecated but still in use by some customers
+)
+
+for s3_path in "${s3_latest_paths[@]}"; do
+  aws s3 cp dist-release/widget.min.js --profile "$AWS_PROFILE" \
+    "${s3_path}" \
+    --content-type "application/javascript" \
+    --cache-control "public, max-age=3600"
+done
 
 release_completed=true
 
