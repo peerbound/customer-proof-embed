@@ -59,6 +59,11 @@ if [ -z "$AWS_PROFILE" ]; then
     exit 1
 fi
 
+if [ -z "$DISTRIBUTION_ID" ]; then
+    echo "DISTRIBUTION_ID is not set. Check your .env files."
+    exit 1
+fi
+
 # Ensure we're on the main branch
 current_branch=$(git branch --show-current)
 if [ "$current_branch" != "main" ]; then
@@ -214,6 +219,15 @@ for s3_path in "${s3_latest_paths[@]}"; do
 done
 
 release_completed=true
+
+echo "Invalidating CloudFront cache..."
+aws cloudfront create-invalidation \
+  --distribution-id "$DISTRIBUTION_ID" \
+  --paths "/scripts/widget@latest.js" "/v1/widget.js" \
+  --profile "$AWS_PROFILE" \
+  --no-cli-pager > /dev/null || {
+    echo "Failed to invalidate CloudFront cache"
+  }
 
 echo ""
 echo "🎉 Release $tag_name successfully created."
