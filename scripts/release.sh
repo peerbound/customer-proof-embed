@@ -28,6 +28,12 @@ cleanup() {
             }
         fi
 
+        if [ "$versioned_file_creation_success" = true ]; then
+            aws s3 rm "${s3_versioned_path}" --profile "$AWS_PROFILE" || {
+                echo -e "Failed to delete S3 file:\n${s3_versioned_path}"
+            }
+        fi
+
         # Delete release and tag
         if [ "$release_creation_success" = true ]; then
             gh release delete "$tag_name" --yes --cleanup-tag >/dev/null || {
@@ -117,6 +123,7 @@ trap cleanup EXIT
 # Track success/failure of each step for cleanup
 local_branch_creation_success=false
 remote_branch_creation_success=false
+versioned_file_creation_success=false
 release_creation_success=false
 
 release_completed=false
@@ -153,6 +160,24 @@ fi
 
 echo "Building release assets..."
 pnpm tsc -b && pnpm vite build --mode release --logLevel silent
+
+echo "Uploading versioned widget file to S3..."
+s3_versioned_path="s3://${S3_BUCKET}/scripts/widget@${version}.js"
+
+# Ensure we do not overwrite an existing versioned file
+if aws s3 ls "${s3_versioned_path}" --profile "$AWS_PROFILE" 2>/dev/null; then
+    echo -e "File already exists in S3:\n${s3_versioned_path}"
+    exit 1
+fi
+
+# Upload versioned file (immutable - cache forever)
+aws s3 cp dist-release/widget.min.js --profile "$AWS_PROFILE" \
+  "${s3_versioned_path}" \
+  --content-type "application/javascript" \
+  --cache-control "public, max-age=31536000, immutable" \
+  --only-show-errors
+
+versioned_file_creation_success=true
 
 # Create release
 echo "Creating GitHub release..."
