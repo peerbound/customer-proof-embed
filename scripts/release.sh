@@ -43,25 +43,11 @@ cleanup() {
     fi
 }
 
-# Get environment from first argument
-ENV=$1
-
-if [ -z "$ENV" ]; then
-    echo "No environment argument provided. Call with 'staging' or 'production'."
-    exit 1
-fi
-
-# Only accept "staging" or "production"
-if [ "$ENV" != "staging" ] && [ "$ENV" != "production" ]; then
-    echo "Invalid environment argument. Must be either 'staging' or 'production'."
-    exit 1
-fi
-
 # Load environment variables (later overrides earlier)
 [ -f ".env" ] && source ".env"
 [ -f ".env.local" ] && source ".env.local"
-[ -f ".env.$ENV" ] && source ".env.$ENV"
-[ -f ".env.$ENV.local" ] && source ".env.$ENV.local"
+[ -f ".env.production" ] && source ".env.production"
+[ -f ".env.production.local" ] && source ".env.production.local"
 
 if [ -z "$S3_BUCKET" ]; then
     echo "S3_BUCKET is not set. Check your .env files."
