@@ -115,7 +115,25 @@ version=$(echo "$status_json" | jq -e -r '.releases[0].newVersion') || {
 }
 
 # Create bulleted list of release notes
-notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
+release_notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
+
+widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
+
+notes="$(cat <<EOF
+### Release Notes
+$release_notes
+
+### Embed Script URL
+\`\`\`
+${widget_js_url}
+\`\`\`
+
+### Script Tag
+\`\`\`html
+<script src="${widget_js_url}"></script>
+\`\`\`
+EOF
+)"
 
 # Run cleanup function post-run regardless of success or failure
 trap cleanup EXIT
@@ -205,7 +223,8 @@ for s3_path in "${s3_latest_paths[@]}"; do
   aws s3 cp dist-release/widget.min.js --profile "$AWS_PROFILE" \
     "${s3_path}" \
     --content-type "application/javascript" \
-    --cache-control "public, max-age=3600"
+    --cache-control "public, max-age=3600" \
+    --only-show-errors
 done
 
 release_completed=true
