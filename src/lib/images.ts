@@ -6,15 +6,16 @@ export interface EventImages {
   photoUrl?: string;
 }
 
-export const getLogoUrl = (
-  account: PublicAccount,
-  sizeToRequest: number,
-): string => {
-  return (
-    account.light_logo_url ??
-    account.dark_logo_url ??
-    `${API_BASE_URL}/api/images/favicon/${account.domain_name}?size=${sizeToRequest}`
-  );
+export const getLogoUrl = (account: PublicAccount, sizeToRequest: number) => {
+  const brandLogoUrl = account.light_logo_url ?? account.dark_logo_url;
+
+  if (brandLogoUrl) {
+    return brandLogoUrl;
+  }
+
+  if (account.domain_name) {
+    return `${API_BASE_URL}/api/images/favicon/${account.domain_name}?size=${sizeToRequest}`;
+  }
 };
 
 const loadImage = (url: string): Promise<HTMLImageElement | null> =>
@@ -48,16 +49,13 @@ const loadLogos = async (
   events: PublicEvent[],
   hidePhotos: boolean,
 ): Promise<Map<string, string>> => {
-  const eventLogoUrls = events.map((event) => {
+  const eventLogoUrls = events.flatMap((event) => {
     const contact = getContactForEvent(event);
     const hasPhoto = !hidePhotos && Boolean(contact.photo_url);
     const sizeToRequest = hasPhoto ? 32 : 64;
+    const url = getLogoUrl(event.account, sizeToRequest);
 
-    return {
-      eventId: event.id,
-      url: getLogoUrl(event.account, sizeToRequest),
-      sizeToRequest,
-    };
+    return url ? [{ eventId: event.id, url, sizeToRequest }] : [];
   });
 
   const uniqueUrls = [...new Set(eventLogoUrls.map(({ url }) => url))];

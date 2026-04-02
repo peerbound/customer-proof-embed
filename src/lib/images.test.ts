@@ -88,6 +88,16 @@ describe("getLogoUrl", () => {
     expect(getLogoUrl(account, 32)).toContain("size=32");
     expect(getLogoUrl(account, 64)).toContain("size=64");
   });
+
+  it("should return undefined when no logos or domain name is provided", () => {
+    const account: PublicAccount = {
+      ...mockAccount,
+      light_logo_url: null,
+      dark_logo_url: null,
+      domain_name: null,
+    };
+    expect(getLogoUrl(account, 64)).toBeUndefined();
+  });
 });
 
 describe("getContactForEvent", () => {
