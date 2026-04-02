@@ -28,6 +28,12 @@ cleanup() {
             }
         fi
 
+        if [ "$versioned_file_creation_success" = true ]; then
+            aws s3 rm "${s3_versioned_path}" --profile "$AWS_PROFILE" || {
+                echo -e "Failed to delete S3 file:\n${s3_versioned_path}"
+            }
+        fi
+
         # Delete release and tag
         if [ "$release_creation_success" = true ]; then
             gh release delete "$tag_name" --yes --cleanup-tag >/dev/null || {
@@ -36,6 +42,27 @@ cleanup() {
         fi
     fi
 }
+
+# Load environment variables (later overrides earlier)
+[ -f ".env" ] && source ".env"
+[ -f ".env.local" ] && source ".env.local"
+[ -f ".env.production" ] && source ".env.production"
+[ -f ".env.production.local" ] && source ".env.production.local"
+
+if [ -z "$S3_BUCKET" ]; then
+    echo "S3_BUCKET is not set. Check your .env files."
+    exit 1
+fi
+
+if [ -z "$AWS_PROFILE" ]; then
+    echo "AWS_PROFILE is not set. Check your .env files."
+    exit 1
+fi
+
+if [ -z "$DISTRIBUTION_ID" ]; then
+    echo "DISTRIBUTION_ID is not set. Check your .env files."
+    exit 1
+fi
 
 # Ensure we're on the main branch
 current_branch=$(git branch --show-current)
@@ -79,7 +106,25 @@ version=$(echo "$status_json" | jq -e -r '.releases[0].newVersion') || {
 }
 
 # Create bulleted list of release notes
-notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
+release_notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
+
+widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
+
+notes="$(cat <<EOF
+### Release Notes
+$release_notes
+
+### Embed Script URL
+\`\`\`
+${widget_js_url}
+\`\`\`
+
+### Script Tag
+\`\`\`html
+<script src="${widget_js_url}"></script>
+\`\`\`
+EOF
+)"
 
 # Run cleanup function post-run regardless of success or failure
 trap cleanup EXIT
@@ -87,6 +132,7 @@ trap cleanup EXIT
 # Track success/failure of each step for cleanup
 local_branch_creation_success=false
 remote_branch_creation_success=false
+versioned_file_creation_success=false
 release_creation_success=false
 
 release_completed=false
@@ -124,6 +170,24 @@ fi
 echo "Building release assets..."
 pnpm tsc -b && pnpm vite build --mode release --logLevel silent
 
+echo "Uploading versioned widget file to S3..."
+s3_versioned_path="s3://${S3_BUCKET}/scripts/widget@${version}.js"
+
+# Ensure we do not overwrite an existing versioned file
+if aws s3 ls "${s3_versioned_path}" --profile "$AWS_PROFILE" 2>/dev/null; then
+    echo -e "File already exists in S3:\n${s3_versioned_path}"
+    exit 1
+fi
+
+# Upload versioned file (immutable - cache forever)
+aws s3 cp dist-release/widget.min.js --profile "$AWS_PROFILE" \
+  "${s3_versioned_path}" \
+  --content-type "application/javascript" \
+  --cache-control "public, max-age=31536000, immutable" \
+  --only-show-errors
+
+versioned_file_creation_success=true
+
 # Create release
 echo "Creating GitHub release..."
 if gh release view "$tag_name" >/dev/null 2>&1; then
@@ -135,9 +199,35 @@ else
 fi
 
 echo "Opening pull request..."
+
+# We do not need to track PR success here because we delete the branch on pipeline failure
 pr_url=$(gh pr create --base main --head "$branch_name" --title "Bump version to $tag_name" --body "$notes")
 
+echo "Uploading latest widget file to S3..."
+
+s3_latest_paths=(
+  "s3://${S3_BUCKET}/scripts/widget@latest.js"
+  "s3://${S3_BUCKET}/v1/widget.js"  # Deprecated but still in use by some customers
+)
+
+for s3_path in "${s3_latest_paths[@]}"; do
+  aws s3 cp dist-release/widget.min.js --profile "$AWS_PROFILE" \
+    "${s3_path}" \
+    --content-type "application/javascript" \
+    --cache-control "public, max-age=3600" \
+    --only-show-errors
+done
+
 release_completed=true
+
+echo "Invalidating CloudFront cache..."
+aws cloudfront create-invalidation \
+  --distribution-id "$DISTRIBUTION_ID" \
+  --paths "/scripts/widget@latest.js" "/v1/widget.js" \
+  --profile "$AWS_PROFILE" \
+  --no-cli-pager > /dev/null || {
+    echo "Failed to invalidate CloudFront cache"
+  }
 
 echo ""
 echo "🎉 Release $tag_name successfully created."
