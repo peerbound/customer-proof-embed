@@ -1,22 +1,79 @@
 #!/bin/bash
 
-# Exit on first error
 set -e
 
 if [ "$DEBUG" = true ]; then
     set -x
 fi
 
-# # Runs at the end regardless of success or failure
+# ------------------------------------------------------------------------------
+# Validation
+# ------------------------------------------------------------------------------
+
+validate_env() {
+    if [ -z "$S3_BUCKET" ]; then
+        echo "S3_BUCKET is not set. Check your environment variables." >&2
+        exit 1
+    fi
+
+    if [ -z "$DISTRIBUTION_ID" ]; then
+        echo "DISTRIBUTION_ID is not set. Check your environment variables." >&2
+        exit 1
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Shared functions
+# ------------------------------------------------------------------------------
+
+build_release_assets() {
+    echo "Building release assets..."
+    pnpm tsc -b && pnpm vite build --mode release --logLevel silent
+}
+
+deploy_latest_to_s3() {
+    echo "Uploading latest widget file to S3..."
+
+    s3_latest_paths=(
+        "s3://${S3_BUCKET}/scripts/widget@latest.js"
+        "s3://${S3_BUCKET}/v1/widget.js"  # Deprecated but still in use by some customers
+    )
+
+    for s3_path in "${s3_latest_paths[@]}"; do
+        aws s3 cp dist-release/widget.min.js "${s3_path}" \
+            --content-type "application/javascript" \
+            --cache-control "public, max-age=3600" \
+            --only-show-errors
+    done
+}
+
+# ------------------------------------------------------------------------------
+# Staging release
+# ------------------------------------------------------------------------------
+
+release_staging() {
+    build_release_assets
+    deploy_latest_to_s3
+
+    echo ""
+    echo "🎉 Latest widget file successfully deployed to S3."
+    echo ""
+}
+
+# ------------------------------------------------------------------------------
+# Production release
+# ------------------------------------------------------------------------------
+
+# Runs at the end regardless of success or failure
 cleanup() {
     git checkout -q main || {
-        echo "Failed to checkout main branch"
+        echo "Failed to checkout main branch" >&2
     }
 
     # Delete local branch regardless of success or failure
     if [ "$local_branch_creation_success" = true ]; then
         git branch -D "$branch_name" >/dev/null || {
-            echo "Failed to delete local branch $branch_name"
+            echo "Failed to delete local branch $branch_name" >&2
         }
     fi
 
@@ -24,93 +81,50 @@ cleanup() {
         # Delete remote branch (this will auto-close the PR too)
         if [ "$remote_branch_creation_success" = true ]; then
             git push -q origin --delete "$branch_name" || {
-                echo "Failed to delete remote branch $branch_name"
+                echo "Failed to delete remote branch $branch_name" >&2
             }
         fi
 
         if [ "$versioned_file_creation_success" = true ]; then
-            aws s3 rm "${s3_versioned_path}" --profile "$AWS_PROFILE" || {
-                echo -e "Failed to delete S3 file:\n${s3_versioned_path}"
+            aws s3 rm "${s3_versioned_path}" || {
+                echo "Failed to delete S3 file: ${s3_versioned_path}" >&2
             }
         fi
 
         # Delete release and tag
         if [ "$release_creation_success" = true ]; then
             gh release delete "$tag_name" --yes --cleanup-tag >/dev/null || {
-                echo "Failed to delete release $tag_name"
+                echo "Failed to delete release $tag_name" >&2
             }
         fi
     fi
 }
 
-# Load environment variables (later overrides earlier)
-[ -f ".env" ] && source ".env"
-[ -f ".env.local" ] && source ".env.local"
-[ -f ".env.production" ] && source ".env.production"
-[ -f ".env.production.local" ] && source ".env.production.local"
+release_production() {
+    # Get changeset status
+    status_json=$(pnpm changeset status --output=/dev/stdout) || {
+        echo "No changesets found." >&2
+        exit 1
+    }
 
-if [ -z "$S3_BUCKET" ]; then
-    echo "S3_BUCKET is not set. Check your .env files."
-    exit 1
-fi
+    num_versions=$(echo "$status_json" | jq -r '.releases | length')
+    if [ "$num_versions" -gt 1 ]; then
+        # This should never happen (would only happen in a monorepo)
+        echo "Multiple version releases not supported." >&2
+        exit 1
+    fi
 
-if [ -z "$AWS_PROFILE" ]; then
-    echo "AWS_PROFILE is not set. Check your .env files."
-    exit 1
-fi
+    version=$(echo "$status_json" | jq -e -r '.releases[0].newVersion') || {
+        echo "No changesets found." >&2
+        exit 1
+    }
 
-if [ -z "$DISTRIBUTION_ID" ]; then
-    echo "DISTRIBUTION_ID is not set. Check your .env files."
-    exit 1
-fi
+    # Create bulleted list of release notes
+    release_notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
 
-# Ensure we're on the main branch
-current_branch=$(git branch --show-current)
-if [ "$current_branch" != "main" ]; then
-    echo "You must be on the main branch to create a new release."
-    exit 1
-fi
+    widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
 
-# Ensure we have a clean working directory
-if [ -n "$(git status --porcelain)" ]; then
-    echo "You must have a clean working directory to create a new release."
-    exit 1
-fi
-
-# Ensure we're in sync with remote
-git fetch -q origin
-local_commit=$(git rev-parse HEAD)
-remote_commit=$(git rev-parse origin/main)
-
-if [ "$local_commit" != "$remote_commit" ]; then
-    echo "Your local branch is not in sync with origin/main. Please pull or push changes first."
-    exit 1
-fi
-
-status_json=$(pnpm changeset status --output=/dev/stdout) || {
-    echo "No changesets found."
-    exit 1
-}
-
-num_versions=$(echo "$status_json" | jq -r '.releases | length')
-if [ "$num_versions" -gt 1 ]; then
-    # Do not proceed if status contains multiple version releases
-    # This should never happen (this would only happen in the case of a monorepo)
-    echo "Multiple version releases not supported."
-    exit 1
-fi
-
-version=$(echo "$status_json" | jq -e -r '.releases[0].newVersion') || {
-    echo "No changesets found."
-    exit 1
-}
-
-# Create bulleted list of release notes
-release_notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
-
-widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
-
-notes="$(cat <<EOF
+    notes="$(cat <<EOF
 ### Release Notes
 $release_notes
 
@@ -126,112 +140,99 @@ ${widget_js_url}
 EOF
 )"
 
-# Run cleanup function post-run regardless of success or failure
-trap cleanup EXIT
+    # Track success/failure of each step for cleanup
+    local_branch_creation_success=false
+    remote_branch_creation_success=false
+    versioned_file_creation_success=false
+    release_creation_success=false
+    release_completed=false
 
-# Track success/failure of each step for cleanup
-local_branch_creation_success=false
-remote_branch_creation_success=false
-versioned_file_creation_success=false
-release_creation_success=false
+    tag_name="v$version"
+    branch_name="bump-$tag_name"
 
-release_completed=false
+    # Create local branch
+    echo "Creating release branch..."
+    if git show-ref --verify --quiet "refs/heads/$branch_name"; then
+        echo "Local branch $branch_name already exists" >&2
+        exit 1
+    else
+        git checkout -q -b "$branch_name"
+        local_branch_creation_success=true
+    fi
 
-# Checkout a new branch for version bump
-tag_name="v$version"
-branch_name="bump-$tag_name"
+    echo "Bumping version to $tag_name..."
+    pnpm changeset version >/dev/null
 
-# Create local branch
-echo "Creating release branch..."
-if git show-ref --verify --quiet "refs/heads/$branch_name"; then
-    echo "Local branch $branch_name already exists"
-    exit 1
+    git add .
+    git commit --no-verify -q -m "Bump version to $tag_name"
+
+    # Create remote branch
+    echo "Pushing to remote..."
+    if git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1; then
+        echo "Remote branch $branch_name already exists" >&2
+        exit 1
+    else
+        git push -q origin "$branch_name" 2>/dev/null
+        remote_branch_creation_success=true
+    fi
+
+    build_release_assets
+
+    echo "Uploading versioned widget file to S3..."
+    s3_versioned_path="s3://${S3_BUCKET}/scripts/widget@${version}.js"
+
+    # Ensure we do not overwrite an existing versioned file
+    if aws s3 ls "${s3_versioned_path}" 2>/dev/null; then
+        echo "File already exists in S3: ${s3_versioned_path}" >&2
+        exit 1
+    fi
+
+    # Upload versioned file (immutable - cache forever)
+    aws s3 cp dist-release/widget.min.js "${s3_versioned_path}" \
+        --content-type "application/javascript" \
+        --cache-control "public, max-age=31536000, immutable" \
+        --only-show-errors
+
+    versioned_file_creation_success=true
+
+    # Create release
+    echo "Creating GitHub release..."
+    if gh release view "$tag_name" >/dev/null 2>&1; then
+        echo "Release $tag_name already exists." >&2
+        exit 1
+    else
+        release_url=$(gh release create "$tag_name" ./dist-release/widget.js ./dist-release/widget.min.js --notes "$notes" --target "$branch_name")
+        release_creation_success=true
+    fi
+
+    echo "Opening pull request..."
+    pr_url=$(gh pr create --base main --head "$branch_name" --title "Bump version to $tag_name" --body "$notes")
+
+    # Must be last, we don't revert this
+    deploy_latest_to_s3
+
+    release_completed=true
+
+    echo ""
+    echo "🎉 Release $tag_name successfully created."
+    echo "$release_url"
+    echo ""
+    echo "Merge this PR to bump the version:"
+    echo "$pr_url"
+}
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
+
+validate_env
+
+if [ "$ENV" = "production" ]; then
+    trap cleanup EXIT
+    release_production
+elif [ "$ENV" = "staging" ]; then
+    release_staging
 else
-    git checkout -q -b "$branch_name"
-    local_branch_creation_success=true
-fi
-
-echo "Bumping version to $tag_name..."
-pnpm changeset version >/dev/null
-
-git add .
-git commit --no-verify -q -m "Bump version to $tag_name"
-
-# Create remote branch
-echo "Pushing to remote..."
-if git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1; then
-    echo "Remote branch $branch_name already exists"
-    exit 1
-else
-    git push -q origin "$branch_name" 2>/dev/null
-    remote_branch_creation_success=true
-fi
-
-echo "Building release assets..."
-pnpm tsc -b && pnpm vite build --mode release --logLevel silent
-
-echo "Uploading versioned widget file to S3..."
-s3_versioned_path="s3://${S3_BUCKET}/scripts/widget@${version}.js"
-
-# Ensure we do not overwrite an existing versioned file
-if aws s3 ls "${s3_versioned_path}" --profile "$AWS_PROFILE" 2>/dev/null; then
-    echo -e "File already exists in S3:\n${s3_versioned_path}"
+    echo "Invalid ENV: '$ENV'. Must be 'staging' or 'production'." >&2
     exit 1
 fi
-
-# Upload versioned file (immutable - cache forever)
-aws s3 cp dist-release/widget.min.js --profile "$AWS_PROFILE" \
-  "${s3_versioned_path}" \
-  --content-type "application/javascript" \
-  --cache-control "public, max-age=31536000, immutable" \
-  --only-show-errors
-
-versioned_file_creation_success=true
-
-# Create release
-echo "Creating GitHub release..."
-if gh release view "$tag_name" >/dev/null 2>&1; then
-    echo "Release $tag_name already exists."
-    exit 1
-else
-    release_url=$(gh release create "$tag_name" ./dist-release/widget.js ./dist-release/widget.min.js --notes "$notes" --target "$branch_name")
-    release_creation_success=true
-fi
-
-echo "Opening pull request..."
-
-# We do not need to track PR success here because we delete the branch on pipeline failure
-pr_url=$(gh pr create --base main --head "$branch_name" --title "Bump version to $tag_name" --body "$notes")
-
-echo "Uploading latest widget file to S3..."
-
-s3_latest_paths=(
-  "s3://${S3_BUCKET}/scripts/widget@latest.js"
-  "s3://${S3_BUCKET}/v1/widget.js"  # Deprecated but still in use by some customers
-)
-
-for s3_path in "${s3_latest_paths[@]}"; do
-  aws s3 cp dist-release/widget.min.js --profile "$AWS_PROFILE" \
-    "${s3_path}" \
-    --content-type "application/javascript" \
-    --cache-control "public, max-age=3600" \
-    --only-show-errors
-done
-
-release_completed=true
-
-echo "Invalidating CloudFront cache..."
-aws cloudfront create-invalidation \
-  --distribution-id "$DISTRIBUTION_ID" \
-  --paths "/scripts/widget@latest.js" "/v1/widget.js" \
-  --profile "$AWS_PROFILE" \
-  --no-cli-pager > /dev/null || {
-    echo "Failed to invalidate CloudFront cache"
-  }
-
-echo ""
-echo "🎉 Release $tag_name successfully created."
-echo "$release_url"
-echo ""
-echo "Merge this PR to bump the version:"
-echo "$pr_url"
