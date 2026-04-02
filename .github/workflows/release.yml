@@ -1,0 +1,68 @@
+name: Deploy & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: pb-embed-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      PB_API_BASE_URL: ${{ vars.PB_API_BASE_URL }}
+      DISTRIBUTION_ID: ${{ vars.DISTRIBUTION_ID }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      AWS_ROLE: ${{ vars.AWS_ROLE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Lint and format
+        run: |
+          pnpm prettier:check
+          pnpm lint
+      - name: Test
+        run: pnpm test:run
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          role-session-name: GitHubActionsSession
+          aws-region: us-east-1
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Run release
+        run: pnpm release
+        env:
+          ENV: ${{ inputs.environment }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Invalidate CloudFront cache for latest widget files
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ env.DISTRIBUTION_ID }} --paths "/scripts/widget@latest.js" "/v1/widget.js" || echo "::warning::Failed to invalidate CloudFront cache"
