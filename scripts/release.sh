@@ -22,6 +22,21 @@ validate_env() {
     fi
 }
 
+validate_branch() {
+    if [ -z "$GITHUB_REF_NAME" ]; then
+        echo "GITHUB_REF_NAME is not set. This script must be run in GitHub Actions." >&2
+        exit 1
+    fi
+
+    if [ "$ENV" = "production" ] && [ "$GITHUB_REF_NAME" != "main" ]; then
+        echo "Production releases must be run from the 'main' branch (current: '$GITHUB_REF_NAME')." >&2
+        exit 1
+    elif [ "$ENV" = "staging" ] && [ "$GITHUB_REF_NAME" != "staging" ]; then
+        echo "Staging releases must be run from the 'staging' branch (current: '$GITHUB_REF_NAME')." >&2
+        exit 1
+    fi
+}
+
 # ------------------------------------------------------------------------------
 # Shared functions
 # ------------------------------------------------------------------------------
@@ -226,6 +241,7 @@ EOF
 # ------------------------------------------------------------------------------
 
 validate_env
+validate_branch
 
 if [ "$ENV" = "production" ]; then
     trap cleanup EXIT
