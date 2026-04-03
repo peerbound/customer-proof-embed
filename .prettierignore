@@ -4,3 +4,6 @@ coverage
 
 # Ignore minified files
 *.min.js
+
+# Ignore Markdown files
+*.md
