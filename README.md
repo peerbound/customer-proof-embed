@@ -155,3 +155,40 @@ pb-embed::part(source-link) {
   display: none;
 }
 ```
+
+## Versioning and Self-Hosting
+
+By default, the widget script at `https://embed.peerbound.com/scripts/widget@latest.js` always serves the latest version. If you need to lock to a specific version, you have two options.
+
+### Using Peerbound-Hosted Versioned Scripts
+
+Each release is available at a versioned URL hosted by Peerbound. Find the URL for your desired version on the [releases page](https://github.com/peerbound/customer-proof-embed/releases) and update your script tag:
+
+```html
+<pb-embed embed-id="your-embed-id"></pb-embed>
+<script async src="https://embed.peerbound.com/scripts/widget@1.4.6.js"></script>
+```
+
+Each release also provides an integrity hash for [Subresource Integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity) (SRI) verification:
+
+```html
+<script
+  async
+  src="https://embed.peerbound.com/scripts/widget@1.4.6.js"
+  crossorigin="anonymous"
+  integrity="sha384-..."
+></script>
+```
+
+### Self-Hosting
+
+You can also download and host the widget script yourself:
+
+1. Download the `widget.min.js` file from the desired release on the [releases page](https://github.com/peerbound/customer-proof-embed/releases)
+2. Host it on your own server or CDN
+3. Update the script tag to point to your hosted file:
+
+```html
+<pb-embed embed-id="your-embed-id"></pb-embed>
+<script async src="https://your-cdn.com/widget.min.js"></script>
+```
