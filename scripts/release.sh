@@ -10,18 +10,6 @@ fi
 # Validation
 # ------------------------------------------------------------------------------
 
-validate_env() {
-    if [ -z "$S3_BUCKET" ]; then
-        echo "S3_BUCKET is not set. Check your environment variables." >&2
-        exit 1
-    fi
-
-    if [ -z "$DISTRIBUTION_ID" ]; then
-        echo "DISTRIBUTION_ID is not set. Check your environment variables." >&2
-        exit 1
-    fi
-}
-
 validate_branch() {
     if [ -z "$GITHUB_REF_NAME" ]; then
         echo "GITHUB_REF_NAME is not set. This script must be run in GitHub Actions." >&2
@@ -33,6 +21,18 @@ validate_branch() {
         exit 1
     elif [ "$ENV" = "staging" ] && [ "$GITHUB_REF_NAME" != "staging" ]; then
         echo "Staging releases must be run from the 'staging' branch (current: '$GITHUB_REF_NAME')." >&2
+        exit 1
+    fi
+}
+
+validate_env() {
+    if [ -z "$S3_BUCKET" ]; then
+        echo "S3_BUCKET is not set. Check your environment variables." >&2
+        exit 1
+    fi
+
+    if [ -z "$DISTRIBUTION_ID" ]; then
+        echo "DISTRIBUTION_ID is not set. Check your environment variables." >&2
         exit 1
     fi
 }
@@ -137,24 +137,6 @@ release_production() {
     # Create bulleted list of release notes
     release_notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
 
-    widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
-
-    notes="$(cat <<EOF
-### Release Notes
-$release_notes
-
-### Embed Script URL
-\`\`\`
-${widget_js_url}
-\`\`\`
-
-### Script Tag
-\`\`\`html
-<script src="${widget_js_url}"></script>
-\`\`\`
-EOF
-)"
-
     # Track success/failure of each step for cleanup
     local_branch_creation_success=false
     remote_branch_creation_success=false
@@ -177,6 +159,9 @@ EOF
 
     echo "Bumping version to $tag_name..."
     pnpm changeset version >/dev/null
+
+    echo "Updating README version references..."
+    sed -i'' -e "s|widget@[0-9]*\.[0-9]*\.[0-9]*\.js|widget@${version}.js|g" README.md
 
     git add .
     git commit --no-verify -q -m "Bump version to $tag_name"
@@ -210,6 +195,30 @@ EOF
 
     versioned_file_creation_success=true
 
+    # Generate integrity hash and release notes
+    widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
+    integrity_hash="sha384-$(openssl dgst -sha384 -binary dist-release/widget.min.js | openssl base64 -A)"
+
+    notes="$(cat <<EOF
+### Release Notes
+$release_notes
+
+### Embed Script URL
+\`\`\`
+${widget_js_url}
+\`\`\`
+
+### Script Tag
+\`\`\`html
+<script
+  src="${widget_js_url}"
+  crossorigin="anonymous"
+  integrity="${integrity_hash}"
+></script>
+\`\`\`
+EOF
+)"
+
     # Create release
     echo "Creating GitHub release..."
     if gh release view "$tag_name" >/dev/null 2>&1; then
@@ -240,8 +249,8 @@ EOF
 # Main
 # ------------------------------------------------------------------------------
 
-validate_env
 validate_branch
+validate_env
 
 if [ "$ENV" = "production" ]; then
     trap cleanup EXIT

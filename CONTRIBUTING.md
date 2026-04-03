@@ -8,6 +8,7 @@ We welcome contributions to this project!
 2. Create a `.env.local` file with your embed ID:
    ```
    PB_EMBED_ID=your-embed-id
+   PB_API_BASE_URL=https://api.example.com  # Optional: override API base URL
    ```
 3. Start dev server: `pnpm dev`
 4. Run tests: `pnpm test`
