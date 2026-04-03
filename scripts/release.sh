@@ -137,24 +137,6 @@ release_production() {
     # Create bulleted list of release notes
     release_notes=$(echo "$status_json" | jq -r '.changesets | map("- " + .summary) | join("\n")')
 
-    widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
-
-    notes="$(cat <<EOF
-### Release Notes
-$release_notes
-
-### Embed Script URL
-\`\`\`
-${widget_js_url}
-\`\`\`
-
-### Script Tag
-\`\`\`html
-<script src="${widget_js_url}"></script>
-\`\`\`
-EOF
-)"
-
     # Track success/failure of each step for cleanup
     local_branch_creation_success=false
     remote_branch_creation_success=false
@@ -210,6 +192,30 @@ EOF
 
     versioned_file_creation_success=true
 
+    # Generate integrity hash and release notes
+    widget_js_url="https://embed.peerbound.com/scripts/widget@${version}.js"
+    integrity_hash="sha384-$(openssl dgst -sha384 -binary dist-release/widget.min.js | openssl base64 -A)"
+
+    notes="$(cat <<EOF
+### Release Notes
+$release_notes
+
+### Embed Script URL
+\`\`\`
+${widget_js_url}
+\`\`\`
+
+### Script Tag
+\`\`\`html
+<script
+  src="${widget_js_url}"
+  crossorigin="anonymous"
+  integrity="${integrity_hash}"
+></script>
+\`\`\`
+EOF
+)"
+
     # Create release
     echo "Creating GitHub release..."
     if gh release view "$tag_name" >/dev/null 2>&1; then
@@ -241,7 +247,6 @@ EOF
 # ------------------------------------------------------------------------------
 
 validate_env
-validate_branch
 
 if [ "$ENV" = "production" ]; then
     trap cleanup EXIT
