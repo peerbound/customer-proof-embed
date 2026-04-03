@@ -158,7 +158,7 @@ pb-embed::part(source-link) {
 
 ## Versioning and Self-Hosting
 
-By default, the widget script at `https://embed.peerbound.com/scripts/widget@latest.js` always serves the latest version. If you need to lock to a specific version, you have two options.
+The `widget@latest.js` script always serves the most recent version and should only be used for development and testing. For production implementations, pin to a specific version to ensure stability and security. Find the most recent version on the [releases page](https://github.com/peerbound/customer-proof-embed/releases).
 
 ### Using Peerbound-Hosted Versioned Scripts
 
