@@ -10,7 +10,7 @@ Add the widget script to your page and place the `<pb-embed>` element where you 
 
 ```html
 <pb-embed embed-id="your-embed-id"></pb-embed>
-<script async src="https://embed.peerbound.com/v1/widget.js"></script>
+<script async src="https://embed.peerbound.com/scripts/widget@latest.js"></script>
 ```
 
 Replace `your-embed-id` with the embed ID from the Peerbound [Embed Settings](https://app.peerbound.com/settings/embed) page.
