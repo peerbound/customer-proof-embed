@@ -247,6 +247,7 @@ EOF
 # ------------------------------------------------------------------------------
 
 validate_env
+validate_branch
 
 if [ "$ENV" = "production" ]; then
     trap cleanup EXIT
