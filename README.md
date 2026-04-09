@@ -1,8 +1,12 @@
 # Peerbound for Web
 
-Your customers are already saying great things about you. Peerbound for Web lets you showcase that customer proof directly on your website—moments, reviews, and stories that build trust and drive conversions.
+Your customers are already saying great things about you. _Peerbound for Web_ lets you showcase that customer proof directly on your website. Dynamically pull the latest moments, reviews, and stories from Peerbound onto your website to build trust and drive conversions.
 
-The widget pulls content from Peerbound and displays it in a responsive, customizable grid that matches your brand. No manual updates needed; when you add new proof to Peerbound, it automatically appears on your site.
+This repo contains the Javascript widget that will live on your website and query data from the Peerbound platform. The widget displays a responsive, customizable grid that you can match to your brand.
+
+<img width="1380" height="669" alt="Screenshot 2026-04-08 at 9 30 54 PM" src="https://github.com/user-attachments/assets/e3ecd8ed-24e7-460b-8dd3-bd6ae167ddfc" />
+
+This README walks through what you need to know as a web developer adding _Peerbound for Web_ to your site. To learn more about _Peerbound for Web_ and how it's configured in our product UI, refer to [our documentation site](https://help.peerbound.com/articles/6227455949).
 
 ## Quick Start
 
@@ -29,7 +33,7 @@ Configure the widget using attributes on the `<pb-embed>` element.
 
 | Attribute              | Required | Description                                                           |
 | ---------------------- | -------- | --------------------------------------------------------------------- |
-| `embed-id`             | Yes      | Your unique embed ID (UUID) from the Peerbound dashboard              |
+| `embed-id`             | Yes      | Your unique embed ID (UUID) from the Peerbound web app                |
 | `count`                | No       | Maximum number of items to display initially                          |
 | `hide-photos`          | No       | Set to `"true"` to hide customer photos                               |
 | `hide-peerbound-badge` | No       | Set to `"true"` to hide the "Verified by Peerbound" badge             |
@@ -43,7 +47,7 @@ Configure the widget using attributes on the `<pb-embed>` element.
 
 ### Filtering
 
-Use `filters` to display content filtered by CRM field values. Contact your Peerbound representative to enable embed filter fields.
+Use `filters` to filter proof by CRM field values.
 
 The attribute accepts a JSON string where keys follow the format `object_name:field_name` and values can be a single string or an array of strings.
 
@@ -52,7 +56,7 @@ The attribute accepts a JSON string where keys follow the format `object_name:fi
 | Salesforce | `Account`, `Contact` | `multipicklist`, `picklist`, `string`, `textarea` |
 | HubSpot    | `company`, `contact` | `checkbox`, `select`, `radio`, `text`, `textarea` |
 
-Note that `field_name` must be the CRM's internal name, not the display name shown in the Peerbound UI. For Salesforce custom fields, this name ends with `__c` (e.g., `Custom_Field__c`).
+Note that `field_name` must be the CRM's internal (or "API") name, not the display name shown in the Peerbound UI. For Salesforce custom fields, this name ends with `__c` (e.g., `Custom_Field__c`).
 
 ```html
 <pb-embed
@@ -151,7 +155,7 @@ pb-embed::part(attribution-name) {
   letter-spacing: 0.05em;
 }
 
-pb-embed::part(source-link) {
+pb-embed::part(card-source-link) {
   display: none;
 }
 ```
