@@ -1,6 +1,6 @@
 # Peerbound for Web
 
-Your customers are already saying great things about you. Peerbound for Web lets you showcase that customer proof directly on your website. Dynamically pull the latest moments, reviews, and stories from Peerbound onto your website to build trust and drive conversions.
+Your customers are already saying great things about you. _Peerbound for Web_ lets you showcase that customer proof directly on your website. Dynamically pull the latest moments, reviews, and stories from Peerbound onto your website to build trust and drive conversions.
 
 This repo contains the Javascript widget that will live on your website and query data from the Peerbound platform. The widget displays a responsive, customizable grid that you can match to your brand.
 
