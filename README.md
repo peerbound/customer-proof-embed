@@ -155,7 +155,7 @@ pb-embed::part(attribution-name) {
   letter-spacing: 0.05em;
 }
 
-pb-embed::part(source-link) {
+pb-embed::part(card-source-link) {
   display: none;
 }
 ```
