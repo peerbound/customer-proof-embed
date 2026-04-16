@@ -9,6 +9,7 @@ import {
 } from "./ui/card";
 import { useShowMore } from "../hooks/useShowMore";
 import { Attribution } from "./ui/attribution";
+import { useOptions } from "@/providers/OptionsContext";
 
 interface StoryCardProps {
   story: PublicStory;
@@ -24,6 +25,7 @@ export const StoryCard = ({ story }: StoryCardProps) => {
   } = story;
 
   const { textRef, isExpanded, onExpand } = useShowMore();
+  const { hideDates } = useOptions();
 
   return (
     <Card>
@@ -48,7 +50,7 @@ export const StoryCard = ({ story }: StoryCardProps) => {
 
       <CardFooter
         onExpand={onExpand}
-        date={occurred_at}
+        date={hideDates.includes("story") ? undefined : occurred_at}
         link={{ text: "Customer Story", url }}
       />
     </Card>

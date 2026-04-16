@@ -80,7 +80,7 @@ export const CardExpandableText = forwardRef<
 
 interface CardFooterProps {
   onExpand?: () => void;
-  date: string;
+  date?: string;
   link?: {
     text: string;
     url: string;
@@ -88,10 +88,14 @@ interface CardFooterProps {
 }
 
 export const CardFooter = ({ onExpand, date, link }: CardFooterProps) => {
-  const formattedDate = Intl.DateTimeFormat(undefined, {
-    month: "short",
-    year: "numeric",
-  }).format(parseISO(date));
+  if (!onExpand && !date && !link) return null;
+
+  const formattedDate = date
+    ? Intl.DateTimeFormat(undefined, {
+        month: "short",
+        year: "numeric",
+      }).format(parseISO(date))
+    : undefined;
 
   return (
     <div
@@ -122,7 +126,7 @@ export const CardFooter = ({ onExpand, date, link }: CardFooterProps) => {
             >
               {link.text}
             </a>
-            {" • "}
+            {formattedDate && " • "}
           </>
         )}
         {formattedDate}
