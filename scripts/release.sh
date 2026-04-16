@@ -237,6 +237,14 @@ EOF
 
     release_completed=true
 
+    echo "Locking versioned file in S3..."
+    retain_until=$(date -u -d "+10 years" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
+        date -u -v+10y '+%Y-%m-%dT%H:%M:%SZ')
+    aws s3api put-object-retention \
+        --bucket "${S3_BUCKET}" \
+        --key "scripts/widget@${version}.js" \
+        --retention "{\"Mode\":\"GOVERNANCE\",\"RetainUntilDate\":\"${retain_until}\"}"
+
     echo ""
     echo "🎉 Release $tag_name successfully created."
     echo "$release_url"
