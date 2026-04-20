@@ -37,6 +37,7 @@ Configure the widget using attributes on the `<pb-embed>` element.
 | `count`                | No       | Maximum number of items to display initially                          |
 | `hide-photos`          | No       | Set to `"true"` to hide customer photos                               |
 | `hide-peerbound-badge` | No       | Set to `"true"` to hide the "Verified by Peerbound" badge             |
+| `hide-dates`           | No       | Set to `"true"` to hide dates on all card types, or a JSON array of types to hide selectively (e.g. `'["story"]'`). Valid types: `"moment"`, `"review"`, `"story"` |
 | `filters`              | No       | JSON string to filter displayed content (see [Filtering](#filtering)) |
 
 ### Example with Options

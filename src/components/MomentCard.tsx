@@ -9,6 +9,7 @@ import { useMemo } from "preact/hooks";
 import { getDomain } from "tldts";
 import { useShowMore } from "../hooks/useShowMore";
 import { Attribution } from "./ui/attribution";
+import { useOptions } from "@/providers/OptionsContext";
 
 interface MomentCardProps {
   moment: PublicMoment;
@@ -17,6 +18,7 @@ interface MomentCardProps {
 export const MomentCard = ({ moment }: MomentCardProps) => {
   const { text, contact, account, occurred_at: occurredAt, url } = moment;
   const { textRef, isExpanded, onExpand } = useShowMore();
+  const { hideDates } = useOptions();
 
   const link = useMemo(() => {
     if (!url) return;
@@ -40,7 +42,11 @@ export const MomentCard = ({ moment }: MomentCardProps) => {
         </CardExpandableText>
       </CardTextContent>
 
-      <CardFooter onExpand={onExpand} date={occurredAt} link={link} />
+      <CardFooter
+        onExpand={onExpand}
+        date={hideDates.includes("moment") ? undefined : occurredAt}
+        link={link}
+      />
     </Card>
   );
 };

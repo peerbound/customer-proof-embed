@@ -11,6 +11,7 @@ import {
 import { useShowMore } from "../hooks/useShowMore";
 import { Attribution } from "./ui/attribution";
 import { ReviewHeading, ReviewStars } from "./ui/review";
+import { useOptions } from "@/providers/OptionsContext";
 
 interface ReviewCardProps {
   review: PublicReview;
@@ -28,6 +29,7 @@ export const ReviewCard = ({ review }: ReviewCardProps) => {
   } = review;
 
   const { textRef, isExpanded, onExpand } = useShowMore();
+  const { hideDates } = useOptions();
 
   return (
     <Card>
@@ -49,7 +51,7 @@ export const ReviewCard = ({ review }: ReviewCardProps) => {
 
       <CardFooter
         onExpand={onExpand}
-        date={occurredAt}
+        date={hideDates.includes("review") ? undefined : occurredAt}
         link={{ text: "G2 Review", url }}
       />
     </Card>

@@ -20,6 +20,19 @@ export const optionsSchema = z.object({
     .optional(),
   hidePhotos: z.preprocess((val) => val === "true", z.boolean()),
   hidePeerboundBadge: z.preprocess((val) => val === "true", z.boolean()),
+  hideDates: z.preprocess(
+    (val) => {
+      if (!val) return [];
+      if (val === "true") return ["moment", "review", "story"];
+      try {
+        const parsed = JSON.parse(val as string);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    },
+    z.array(z.enum(["moment", "review", "story"])),
+  ),
   filters: z
     .string()
     .optional()

@@ -15,6 +15,7 @@ import {
   type PaginationState,
 } from "./components/PaginationControls";
 import type { EmbedOptions } from "./lib/options";
+import { OptionsContext } from "./providers/OptionsContext";
 import { SchemaMarkup } from "./components/SchemaMarkup";
 import Logo from "./assets/logo.svg?react";
 import { logError } from "@/utils/logger";
@@ -130,34 +131,36 @@ export const App = ({ options }: AppProps) => {
       }
 
       return (
-        <div className="flex flex-col items-center gap-6">
-          <SchemaMarkup
-            organization={state.organization}
-            events={state.events}
-          />
-
-          {!options?.hidePeerboundBadge && (
-            <div
-              part="peerbound-badge"
-              className="flex items-center gap-2 text-sm"
-            >
-              <span>Verified by</span>
-              <Logo aria-label="Peerbound" className="h-4.5 w-auto" />
-            </div>
-          )}
-
-          <ProofGrid
-            events={state.events}
-            imagesByEventId={state.imagesByEventId}
-          />
-
-          {state.nextCursor && (
-            <PaginationControls
-              paginationState={paginationState}
-              onLoadMore={fetchMore}
+        <OptionsContext.Provider value={options}>
+          <div className="flex flex-col items-center gap-6">
+            <SchemaMarkup
+              organization={state.organization}
+              events={state.events}
             />
-          )}
-        </div>
+
+            {!options?.hidePeerboundBadge && (
+              <div
+                part="peerbound-badge"
+                className="flex items-center gap-2 text-sm"
+              >
+                <span>Verified by</span>
+                <Logo aria-label="Peerbound" className="h-4.5 w-auto" />
+              </div>
+            )}
+
+            <ProofGrid
+              events={state.events}
+              imagesByEventId={state.imagesByEventId}
+            />
+
+            {state.nextCursor && (
+              <PaginationControls
+                paginationState={paginationState}
+                onLoadMore={fetchMore}
+              />
+            )}
+          </div>
+        </OptionsContext.Provider>
       );
     }
 

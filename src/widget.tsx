@@ -18,6 +18,7 @@ class PBEmbedElement extends HTMLElement {
       hidePhotos: this.getAttribute("hide-photos") ?? undefined,
       hidePeerboundBadge:
         this.getAttribute("hide-peerbound-badge") ?? undefined,
+      hideDates: this.getAttribute("hide-dates") ?? undefined,
       filters: this.getAttribute("filters") ?? undefined,
     });
 

@@ -139,6 +139,58 @@ describe("optionsSchema", () => {
     });
   });
 
+  describe("hideDates validation", () => {
+    it("should default to empty array when undefined", () => {
+      const result = optionsSchema.safeParse({ id: validUUID });
+      expect(result.success).toBe(true);
+      expect(result.data?.hideDates).toEqual([]);
+    });
+
+    it('should expand "true" to all event types', () => {
+      const result = optionsSchema.safeParse({
+        id: validUUID,
+        hideDates: "true",
+      });
+      expect(result.success).toBe(true);
+      expect(result.data?.hideDates).toEqual(["moment", "review", "story"]);
+    });
+
+    it("should parse a JSON array of event types", () => {
+      const result = optionsSchema.safeParse({
+        id: validUUID,
+        hideDates: JSON.stringify(["story"]),
+      });
+      expect(result.success).toBe(true);
+      expect(result.data?.hideDates).toEqual(["story"]);
+    });
+
+    it("should parse multiple event types", () => {
+      const result = optionsSchema.safeParse({
+        id: validUUID,
+        hideDates: JSON.stringify(["moment", "review"]),
+      });
+      expect(result.success).toBe(true);
+      expect(result.data?.hideDates).toEqual(["moment", "review"]);
+    });
+
+    it("should reject invalid event types", () => {
+      const result = optionsSchema.safeParse({
+        id: validUUID,
+        hideDates: JSON.stringify(["invalid"]),
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("should fall back to empty array for malformed JSON", () => {
+      const result = optionsSchema.safeParse({
+        id: validUUID,
+        hideDates: "not json",
+      });
+      expect(result.success).toBe(true);
+      expect(result.data?.hideDates).toEqual([]);
+    });
+  });
+
   describe("filters validation", () => {
     it("should allow missing filters", () => {
       const result = optionsSchema.safeParse({ id: validUUID });
