@@ -131,7 +131,7 @@ export const App = ({ options }: AppProps) => {
       }
 
       return (
-        <OptionsContext.Provider value={options}>
+        <OptionsContext.Provider value={options ?? null}>
           <div className="flex flex-col items-center gap-6">
             <SchemaMarkup
               organization={state.organization}
