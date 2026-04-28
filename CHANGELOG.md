@@ -18,8 +18,6 @@
 
   Valid types are `"moment"`, `"review"`, and `"story"`. When a card has no date and no source link, the card footer is omitted entirely rather than leaving empty space.
 
-- 8bdbd16: Add option to excludes dates from proof cards
-
 ## 1.0.0
 
 ### Major Changes
