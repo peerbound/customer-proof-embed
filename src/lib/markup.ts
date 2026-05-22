@@ -112,15 +112,17 @@ const getStoryMarkup = (
       "@type": "Organization",
       name: organization.name,
     },
-    mainEntity: {
-      "@type": "Review",
-      author: getContactMarkup(story.quote.contact, story.account),
-      reviewBody: story.quote.text,
-      itemReviewed: {
-        "@type": "Organization",
-        name: organization.name,
+    ...(story.quote && {
+      mainEntity: {
+        "@type": "Review",
+        author: getContactMarkup(story.quote.contact, story.account),
+        reviewBody: story.quote.text,
+        itemReviewed: {
+          "@type": "Organization",
+          name: organization.name,
+        },
       },
-    },
+    }),
     url: story.url,
     datePublished: getDate(story.occurred_at),
   };
