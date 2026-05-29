@@ -39,7 +39,7 @@ const loadImage = (url: string): Promise<HTMLImageElement | null> =>
 
 export const getContactForEvent = (event: PublicEvent) => {
   if (event.event_type === "story") {
-    return event.quote.contact;
+    return event.quote?.contact ?? null;
   }
 
   return event.contact;
@@ -51,7 +51,7 @@ const loadLogos = async (
 ): Promise<Map<string, string>> => {
   const eventLogoUrls = events.flatMap((event) => {
     const contact = getContactForEvent(event);
-    const hasPhoto = !hidePhotos && Boolean(contact.photo_url);
+    const hasPhoto = !hidePhotos && Boolean(contact?.photo_url);
     const sizeToRequest = hasPhoto ? 32 : 64;
     const url = getLogoUrl(event.account, sizeToRequest);
 
@@ -96,7 +96,7 @@ const loadPhotos = async (
 
   const eventPhotoUrls = events
     .map((event) => {
-      const photoUrl = getContactForEvent(event).photo_url;
+      const photoUrl = getContactForEvent(event)?.photo_url;
       return {
         eventId: event.id,
         url: photoUrl ? rewriteImageUrl(photoUrl) : null,

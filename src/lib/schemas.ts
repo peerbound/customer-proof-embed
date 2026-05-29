@@ -63,7 +63,7 @@ export const PublicStorySchema = z.object({
   id: z.string(),
   event_type: z.literal("story"),
   title: z.string(),
-  quote: PublicStoryQuoteSchema,
+  quote: PublicStoryQuoteSchema.nullable(),
   account: PublicAccountSchema,
   url: z.url(),
   occurred_at: z.string(), // ISO date string

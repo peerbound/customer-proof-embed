@@ -16,13 +16,7 @@ interface StoryCardProps {
 }
 
 export const StoryCard = ({ story }: StoryCardProps) => {
-  const {
-    title,
-    quote: { text, contact },
-    account,
-    occurred_at,
-    url,
-  } = story;
+  const { title, quote, account, occurred_at, url } = story;
 
   const { textRef, isExpanded, onExpand } = useShowMore();
   const { hideDates } = useOptions();
@@ -39,13 +33,17 @@ export const StoryCard = ({ story }: StoryCardProps) => {
           <CardTitle>{title}</CardTitle>
         </a>
 
-        <CardTextContent>
-          <CardExpandableText ref={textRef} isExpanded={isExpanded}>
-            {text}
-          </CardExpandableText>
-        </CardTextContent>
+        {quote && (
+          <>
+            <CardTextContent>
+              <CardExpandableText ref={textRef} isExpanded={isExpanded}>
+                {quote.text}
+              </CardExpandableText>
+            </CardTextContent>
 
-        <Attribution contact={contact} account={account} />
+            <Attribution contact={quote.contact} account={account} />
+          </>
+        )}
       </CardContent>
 
       <CardFooter
