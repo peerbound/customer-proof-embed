@@ -1,5 +1,12 @@
 # customer-proof-embed
 
+## 1.1.1
+
+### Patch Changes
+
+- 567841d: Disable Zod's JIT schema compilation so the widget no longer triggers `eval`/`new Function`, which was blocked by strict `script-src` Content-Security-Policy directives on customer sites
+- 08ebf23: Render customer story cards that have no quote. Previously a story returned without a quote failed schema validation and was dropped from the widget entirely; now the card renders with its title and footer, omitting the quote text and attribution.
+
 ## 1.1.0
 
 ### Minor Changes
