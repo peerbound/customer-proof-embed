@@ -1,16 +1,12 @@
+// Must be the first import: disables Zod's JIT (`new Function`) before any
+// schema is constructed. See `./zod-config` for the full rationale.
+import "./zod-config";
 import { render } from "preact";
-import { z } from "zod";
 import { App } from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { optionsSchema } from "./lib/options";
 import styles from "./index.css?inline";
 import { logError } from "@/utils/logger";
-
-// Disable Zod's JIT schema compilation, which relies on `new Function`. The
-// widget runs on customer sites whose Content-Security-Policy may forbid
-// `script-src 'unsafe-eval'`, so the JIT fast path would otherwise throw a
-// CSP violation. Must run before any schema is parsed.
-z.config({ jitless: true });
 
 // Create shared stylesheet once for all instances
 const styleSheet = new CSSStyleSheet();
