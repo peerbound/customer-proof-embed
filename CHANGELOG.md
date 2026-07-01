@@ -1,5 +1,12 @@
 # customer-proof-embed
 
+## 1.1.2
+
+### Patch Changes
+
+- d343b99: Update the Peerbound logo shown in optional badge
+- 34fc869: Apply Zod's `jitless` setting before any schema is constructed so it actually takes effect. The setting was previously run after the entry module's imports, by which point the schemas were already built with the JIT (`new Function`) path active. The widget no longer triggers `script-src 'unsafe-eval'` Content-Security-Policy violations on sites with a strict CSP.
+
 ## 1.1.1
 
 ### Patch Changes
