@@ -1,12 +1,12 @@
-# Peerbound for Web
+# Peerbound for AEO
 
-Your customers are already saying great things about you. _Peerbound for Web_ lets you showcase that customer proof directly on your website. Dynamically pull the latest moments, reviews, and stories from Peerbound onto your website to build trust and drive conversions.
+Your customers are already saying great things about you. _Peerbound for AEO_ lets you showcase that customer proof directly on your website. Dynamically pull the latest moments, reviews, and stories from Peerbound onto your website to build trust and drive conversions.
 
 This repo contains the Javascript widget that will live on your website and query data from the Peerbound platform. The widget displays a responsive, customizable grid that you can match to your brand.
 
 <img width="1380" height="669" alt="Screenshot 2026-04-08 at 9 30 54 PM" src="https://github.com/user-attachments/assets/e3ecd8ed-24e7-460b-8dd3-bd6ae167ddfc" />
 
-This README walks through what you need to know as a web developer adding _Peerbound for Web_ to your site. To learn more about _Peerbound for Web_ and how it's configured in our product UI, refer to [our documentation site](https://help.peerbound.com/articles/6227455949).
+This README walks through what you need to know as a web developer adding _Peerbound for AEO_ to your site. To learn more about _Peerbound for AEO_ and how it's configured in our product UI, refer to [our documentation site](https://help.peerbound.com/articles/6227455949).
 
 ## Quick Start
 
