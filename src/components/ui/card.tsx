@@ -31,10 +31,12 @@ interface CardTitleProps {
 }
 
 export const CardTitle = ({ children }: CardTitleProps) => {
+  // Not a heading: these titles label repeated cards, and a heading would
+  // show up in the host page outline.
   return (
-    <h2 part="card-title" className="text-lg font-semibold leading-snug">
+    <p part="card-title" className="text-lg font-semibold leading-snug">
       {children}
-    </h2>
+    </p>
   );
 };
 
