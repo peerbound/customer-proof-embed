@@ -1,5 +1,12 @@
 # customer-proof-embed
 
+## 1.1.3
+
+### Patch Changes
+
+- 281b7eb: Render story and review titles as paragraphs instead of headings so they are not exposed in the host page outline.
+- 95b228e: Upgrade dependencies, including axios to 1.20.0 to address published security advisories.
+
 ## 1.1.2
 
 ### Patch Changes
