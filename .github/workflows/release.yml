@@ -30,9 +30,9 @@ jobs:
       S3_BUCKET: ${{ vars.S3_BUCKET }}
       AWS_ROLE: ${{ vars.AWS_ROLE }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 9
       - name: Use Node.js
@@ -49,7 +49,7 @@ jobs:
       - name: Test
         run: pnpm test:run
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4.1.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ env.AWS_ROLE }}
           role-session-name: GitHubActionsSession
